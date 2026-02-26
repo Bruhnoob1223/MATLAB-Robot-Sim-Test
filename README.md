@@ -11,11 +11,12 @@ required).  Inspired by the methods in the
 | Feature | Detail |
 |---|---|
 | **Kinematics** | Differential-drive unicycle model (x, y, θ) |
-| **Controller A** | Pure-pursuit waypoint following |
-| **Controller B** | Potential-field obstacle avoidance |
+| **Controller A** | Pure-pursuit waypoint following (2-D view) |
+| **Controller B** | Potential-field obstacle avoidance (2-D view) |
+| **Controller C** | Pure-pursuit waypoint following with 3-D visualisation |
 | **Sensor** | Simulated 360° 2-D lidar with Gaussian noise & ray casting |
 | **Obstacles** | Axis-aligned rectangles + circles |
-| **Scenarios** | Open space, cluttered field, narrow corridor |
+| **Scenarios** | Open space, cluttered field, narrow corridor, circle (3-D) |
 | **Toolbox** | Auto-detects Robotics System Toolbox; falls back to pure MATLAB |
 
 ---
@@ -30,16 +31,18 @@ MATLAB-Robot-Sim-Test/
 ├── src/
 │   ├── robot_params.m        ← wheel radius, wheelbase, speed limits
 │   ├── ddrive_step.m         ← Euler-integrate kinematics + collision check
-│   ├── controller_waypoints.m← pure-pursuit controller (Mode A)
+│   ├── controller_waypoints.m← pure-pursuit controller (Mode A / C)
 │   ├── controller_avoidance.m← potential-field controller (Mode B)
 │   ├── sim_lidar.m           ← ray-casting 2-D lidar with noise
 │   ├── world_build.m         ← assemble world struct from obstacle lists
-│   └── visualize_step.m      ← real-time 2-D plot (handle-graphics)
+│   ├── visualize_step.m      ← real-time 2-D plot (handle-graphics)
+│   └── visualize_step_3d.m   ← real-time 3-D plot with robot body & wheels
 │
 ├── scenarios/
 │   ├── scenario_open.m       ← open arena, few obstacles
 │   ├── scenario_cluttered.m  ← dense obstacle field
-│   └── scenario_corridor.m   ← long narrow passage, staggered pillars
+│   ├── scenario_corridor.m   ← long narrow passage, staggered pillars
+│   └── scenario_circle.m     ← obstacle-free circle path (for Mode C)
 │
 ├── tests/
 │   └── test_kinematics.m     ← 6 unit tests (kinematics + goal reachability)
@@ -86,6 +89,9 @@ run_simulation(3, 'A')
 
 % Scenario 3: narrow corridor, obstacle avoidance
 run_simulation(3, 'B')
+
+% Scenario 4: circle (obstacle-free), 3-D visualisation
+run_simulation(4, 'C')
 ```
 
 ### 3 – Run the unit tests
@@ -146,6 +152,12 @@ through the tightest gaps; Mode B must find its way dynamically.
 ### Scenario 3 – Narrow Corridor
 14 × 4 m passage bounded by solid top/bottom walls.  Three staggered
 interior pillars force the robot to slalom from side to side.
+
+### Scenario 4 – Circle (3-D)
+22 × 22 m open arena with no obstacles.  24 waypoints placed on a circle
+of radius 5 m; the robot performs one full loop and returns to the start.
+Designed for `run_simulation(4, 'C')` which renders the robot as a 3-D
+box body with wheel discs in an interactive perspective view.
 
 ---
 

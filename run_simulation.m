@@ -7,17 +7,20 @@ function run_simulation(scenario_id, mode)
 %   run_simulation(2)           – Scenario 2 (cluttered), Mode A
 %   run_simulation(3, 'B')      – Scenario 3 (corridor),  Mode B (avoidance)
 %   run_simulation(1, 'B')      – Scenario 1,             Mode B
+%   run_simulation(4, 'C')      – Scenario 4 (circle),    Mode C (3-D)
 %
 %   Modes
 %   -----
-%   'A'  Pure-pursuit waypoint following
-%   'B'  Potential-field obstacle avoidance
+%   'A'  Pure-pursuit waypoint following (2-D view)
+%   'B'  Potential-field obstacle avoidance (2-D view)
+%   'C'  Pure-pursuit waypoint following with 3-D visualisation
 %
 %   Scenarios
 %   ---------
 %   1  Open space  – few scattered obstacles
 %   2  Cluttered   – dense obstacle field
 %   3  Corridor    – long narrow passage with staggered pillars
+%   4  Circle      – obstacle-free arena; robot drives one full circle
 %
 %   Requirements: MATLAB R2023b+.  Robotics System Toolbox is optional.
 %
@@ -87,8 +90,9 @@ switch scenario_id
     case 1,  [world, waypoints, start_pose, goal] = scenario_open();
     case 2,  [world, waypoints, start_pose, goal] = scenario_cluttered();
     case 3,  [world, waypoints, start_pose, goal] = scenario_corridor();
+    case 4,  [world, waypoints, start_pose, goal] = scenario_circle();
     otherwise
-        error('Unknown scenario %d.  Valid choices: 1, 2, 3.', scenario_id);
+        error('Unknown scenario %d.  Valid choices: 1, 2, 3, 4.', scenario_id);
 end
 
 fprintf('[INFO] Scenario %d loaded.  Mode = %s\n', scenario_id, mode);
@@ -122,18 +126,22 @@ while t < T_MAX && ~reached
     t    = t + dt;
 
     % --- Sense (lidar) --------------------------------------------------
-    [ranges, ray_angles] = sim_lidar(state, world, lidar);
+    if ~strcmp(mode, 'C')
+        [ranges, ray_angles] = sim_lidar(state, world, lidar);
+    else
+        ranges = [];  ray_angles = [];
+    end
 
     % --- Plan / Control -------------------------------------------------
     switch mode
-        case 'A'
+        case {'A', 'C'}
             [v, omega, wp_idx] = controller_waypoints( ...
                 state, waypoints, wp_idx, ctrl_wp, rp);
         case 'B'
             [v, omega] = controller_avoidance( ...
                 state, goal, ranges, ray_angles, ctrl_av, rp);
         otherwise
-            error('Unknown mode ''%s''.  Choose ''A'' or ''B''.', mode);
+            error('Unknown mode ''%s''.  Choose ''A'', ''B'', or ''C''.', mode);
     end
 
     % --- Act ------------------------------------------------------------
@@ -148,7 +156,9 @@ while t < T_MAX && ~reached
     trail(end+1, :) = state(1:2); %#ok<AGROW>
 
     % --- Visualise ------------------------------------------------------
-    if SHOW_LIDAR
+    if strcmp(mode, 'C')
+        handles = visualize_step_3d(state, world, trail, waypoints, goal, step, handles);
+    elseif SHOW_LIDAR
         handles = visualize_step(state, world, ranges, ray_angles, ...
                                  trail, waypoints, goal, step, handles);
     else
